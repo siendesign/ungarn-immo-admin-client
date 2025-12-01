@@ -6,6 +6,9 @@ import {
   SellersResponse,
   UsersResponse,
   UserStatsResponse,
+  Village,
+  VillagesResponse,
+  VillageStatsResponse,
 } from "@/types/index.t";
 import { GetSellerPropertiesResponse } from "@/types/seller.t";
 import { createClient } from "@/utils/supabase/client";
@@ -83,7 +86,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["Properties", "Users", "Sellers", "Buyers"],
+  tagTypes: ["Properties", "Users", "Sellers", "Buyers", "Villages"],
   endpoints: (build) => ({
     getAuthUser: build.query<any, void>({
       queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
@@ -375,6 +378,113 @@ export const api = createApi({
       query: () => "admin/users/stats",
       providesTags: [{ type: "Users", id: "STATS" }],
     }),
+
+    // Village Admin Endpoints
+    getAllVillages: build.query<
+      VillagesResponse,
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        county?: string;
+        status?: string;
+        sortBy?: string;
+        sortOrder?: string;
+      }
+    >({
+      query: (params) => ({
+        url: "admin/villages",
+        params: cleanParams(params),
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.villages.map(({ id }) => ({
+                type: "Villages" as const,
+                id,
+              })),
+              { type: "Villages", id: "LIST" },
+            ]
+          : [{ type: "Villages", id: "LIST" }],
+    }),
+
+    getVillageById: build.query<Village, string>({
+      query: (id) => `admin/villages/${id}`,
+      providesTags: (result, error, id) => [{ type: "Villages", id }],
+    }),
+    createVillage: build.mutation<any, any>({
+      query: (villageData) => ({
+        url: "admin/villages",
+        method: "POST",
+        body: villageData,
+      }),
+      invalidatesTags: [{ type: "Villages", id: "LIST" }],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "Village created successfully!",
+          error: "Failed to create village.",
+        });
+      },
+    }),
+    updateVillage: build.mutation<any, { id: string; data: any }>({
+      query: ({ id, data }) => ({
+        url: `admin/villages/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Villages", id },
+        { type: "Villages", id: "LIST" },
+      ],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "Village updated successfully!",
+          error: "Failed to update village.",
+        });
+      },
+    }),
+    updateVillageStatus: build.mutation<any, { id: string; status: string }>({
+      query: ({ id, status }) => ({
+        url: `admin/villages/${id}/status`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Villages", id },
+        { type: "Villages", id: "LIST" },
+      ],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "Village status updated successfully!",
+          error: "Failed to update village status.",
+        });
+      },
+    }),
+    deleteVillage: build.mutation<any, string>({
+      query: (id) => ({
+        url: `admin/villages/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Villages", id },
+        { type: "Villages", id: "LIST" },
+      ],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "Village deleted successfully!",
+          error: "Failed to delete village.",
+        });
+      },
+    }),
+    getVillageStats: build.query<VillageStatsResponse, void>({
+      query: () => "admin/villages/stats",
+      providesTags: [{ type: "Villages", id: "STATS" }],
+    }),
+
+    getCounties: build.query<{ counties: string[] }, void>({
+      query: () => "admin/villages/counties",
+      providesTags: [{ type: "Villages", id: "COUNTIES" }],
+    }),
   }),
 });
 
@@ -393,4 +503,13 @@ export const {
   useUpdateUserStatusMutation,
   useDeleteUserMutation,
   useGetUserStatsQuery,
+  useGetAllVillagesQuery,
+  useGetVillageByIdQuery,
+  useCreateVillageMutation,
+  useUpdateVillageMutation,
+  useUpdateVillageStatusMutation,
+  useDeleteVillageMutation,
+  useGetVillageStatsQuery,
+  useGetCountiesQuery,
+
 } = api;

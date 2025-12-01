@@ -267,7 +267,7 @@ const UserAdminPage = () => {
             <div className="flex flex-1 flex-col gap-4 p-4">
               {/* Header Section */}
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                   <div>
                     <h1 className="text-3xl font-bold tracking-tight">
                       User Management
@@ -281,7 +281,7 @@ const UserAdminPage = () => {
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Refresh
                     </Button>
-                    <Button variant="outline" onClick={handleExportData}>
+                    <Button variant="outline" onClick={handleExportData} className="hidden md:flex">
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Map,
+  MapPinned,
   PieChart,
   Send,
   Settings,
@@ -39,13 +40,11 @@ import {
 import Image from "next/image";
 import { useGetAuthUserQuery } from "@/state/api";
 
-
 const navItems = [
-  { title: "Dashboard", icon: Home, url: "/" },
+  { title: "Dashboard", icon: Home, url: "/dashboard" },
   { title: "Properties", icon: Building2, url: "/properties", isActive: true },
   { title: "users", icon: Users, url: "/users" },
-  { title: "Reports", icon: FileText, url: "/reports" },
-  { title: "Analytics", icon: BarChart3, url: "/analytics" },
+  { title: "Villages", icon: MapPinned, url: "/villages" },
   { title: "Settings", icon: Settings, url: "/settings" },
 ];
 

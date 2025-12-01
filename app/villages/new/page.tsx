@@ -1,0 +1,1531 @@
+"use client";
+
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import React, { useState } from "react";
+import {
+  MapPin,
+  Building,
+  Wifi,
+  Bus,
+  Users,
+  Palmtree,
+  Link as LinkIcon,
+  Save,
+  X,
+  Plus,
+  ArrowLeft,
+  CheckCircle,
+} from "lucide-react";
+import { useCreateVillageMutation } from "@/state/api";
+import { useRouter } from "next/navigation";
+
+interface VillageFormData {
+  // Basic Info
+  name: string;
+  county: string;
+  population: number;
+  description: string;
+  latitude: number;
+  longitude: number;
+
+  // Infrastructure
+  infrastructure: {
+    hasGroceryStore: boolean;
+    hasSupermarket: boolean;
+    supermarketName: string;
+    storeDistanceKm: number | null;
+    hasWeeklyMarket: boolean;
+    hasBaker: boolean;
+    hasButcher: boolean;
+    hasHouseDoctor: boolean;
+    doctorHours: string;
+    doctorGerman: boolean;
+    nextSpecialistKm: number | null;
+    nextHospitalKm: number | null;
+    hasPharmacy: boolean;
+    pharmacyHours: string;
+    hasDentist: boolean;
+    dentistGerman: boolean;
+    hasPost: boolean;
+    hasAtm: boolean;
+    hasBank: boolean;
+    bankName: string;
+    hasKindergarten: boolean;
+    kindergartenInfo: string;
+    hasPrimarySchool: boolean;
+    primarySchoolInfo: string;
+    hasSecondarySchool: boolean;
+    secondarySchoolInfo: string;
+    restaurantsCount: number;
+    restaurantInfo: string;
+  };
+
+  // Internet
+  internet: {
+    typicalSpeed: number;
+    internetTypes: string[];
+    mobileCoverage: string;
+  };
+
+  // Transport
+  transport: {
+    busRoutes: string;
+    busFrequency: string;
+    trainStation: string;
+    trainDistanceKm: number | null;
+    motorwayDistanceKm: number | null;
+  };
+
+  // Community
+  community: {
+    germanCommunityCount: number;
+    associations: string;
+    festivals: string;
+    atmosphere: string;
+  };
+
+  // Leisure
+  leisure: {
+    nearLakes: boolean;
+    hikingTrails: boolean;
+    bicyclePaths: boolean;
+    spaDistanceKm: number | null;
+    culturalSites: string;
+    nearestTownDistanceKm: number | null;
+  };
+
+  // Links
+  links: Array<{
+    linkType: "WEBSITE" | "WIKIPEDIA" | "YOUTUBE" | "OTHER";
+    url: string;
+  }>;
+}
+
+const CreateVillagePage = () => {
+  const router = useRouter();
+  const [createVillage, { isLoading }] = useCreateVillageMutation();
+  const [activeTab, setActiveTab] = useState("basic");
+
+  const [formData, setFormData] = useState<VillageFormData>({
+    name: "",
+    county: "",
+    population: 0,
+    description: "",
+    latitude: 0,
+    longitude: 0,
+    infrastructure: {
+      hasGroceryStore: false,
+      hasSupermarket: false,
+      supermarketName: "",
+      storeDistanceKm: null,
+      hasWeeklyMarket: false,
+      hasBaker: false,
+      hasButcher: false,
+      hasHouseDoctor: false,
+      doctorHours: "",
+      doctorGerman: false,
+      nextSpecialistKm: null,
+      nextHospitalKm: null,
+      hasPharmacy: false,
+      pharmacyHours: "",
+      hasDentist: false,
+      dentistGerman: false,
+      hasPost: false,
+      hasAtm: false,
+      hasBank: false,
+      bankName: "",
+      hasKindergarten: false,
+      kindergartenInfo: "",
+      hasPrimarySchool: false,
+      primarySchoolInfo: "",
+      hasSecondarySchool: false,
+      secondarySchoolInfo: "",
+      restaurantsCount: 0,
+      restaurantInfo: "",
+    },
+    internet: {
+      typicalSpeed: 0,
+      internetTypes: [],
+      mobileCoverage: "",
+    },
+    transport: {
+      busRoutes: "",
+      busFrequency: "",
+      trainStation: "",
+      trainDistanceKm: null,
+      motorwayDistanceKm: null,
+    },
+    community: {
+      germanCommunityCount: 0,
+      associations: "",
+      festivals: "",
+      atmosphere: "",
+    },
+    leisure: {
+      nearLakes: false,
+      hikingTrails: false,
+      bicyclePaths: false,
+      spaDistanceKm: null,
+      culturalSites: "",
+      nearestTownDistanceKm: null,
+    },
+    links: [],
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleBasicChange = (
+    field: keyof Pick<
+      VillageFormData,
+      "name" | "county" | "population" | "description" | "latitude" | "longitude"
+    >,
+    value: any
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleInfrastructureChange = (
+    field: keyof VillageFormData["infrastructure"],
+    value: any
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      infrastructure: { ...prev.infrastructure, [field]: value },
+    }));
+  };
+
+  const handleInternetChange = (
+    field: keyof VillageFormData["internet"],
+    value: any
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      internet: { ...prev.internet, [field]: value },
+    }));
+  };
+
+  const handleTransportChange = (
+    field: keyof VillageFormData["transport"],
+    value: any
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      transport: { ...prev.transport, [field]: value },
+    }));
+  };
+
+  const handleCommunityChange = (
+    field: keyof VillageFormData["community"],
+    value: any
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      community: { ...prev.community, [field]: value },
+    }));
+  };
+
+  const handleLeisureChange = (
+    field: keyof VillageFormData["leisure"],
+    value: any
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      leisure: { ...prev.leisure, [field]: value },
+    }));
+  };
+
+  const addLink = () => {
+    setFormData((prev) => ({
+      ...prev,
+      links: [...prev.links, { linkType: "WEBSITE", url: "" }],
+    }));
+  };
+
+  const removeLink = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      links: prev.links.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateLink = (
+    index: number,
+    field: "linkType" | "url",
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      links: prev.links.map((link, i) =>
+        i === index ? { ...link, [field]: value } : link
+      ),
+    }));
+  };
+
+  const toggleInternetType = (type: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      internet: {
+        ...prev.internet,
+        internetTypes: prev.internet.internetTypes.includes(type)
+          ? prev.internet.internetTypes.filter((t) => t !== type)
+          : [...prev.internet.internetTypes, type],
+      },
+    }));
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Village name is required";
+    }
+    if (!formData.county.trim()) {
+      newErrors.county = "County is required";
+    }
+    if (formData.population <= 0) {
+      newErrors.population = "Population must be greater than 0";
+    }
+    if (!formData.description.trim()) {
+      newErrors.description = "Description is required";
+    }
+    if (formData.latitude === 0) {
+      newErrors.latitude = "Latitude is required";
+    }
+    if (formData.longitude === 0) {
+      newErrors.longitude = "Longitude is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      setActiveTab("basic");
+      return;
+    }
+
+    try {
+      await createVillage(formData).unwrap();
+      router.push("/villages");
+    } catch (error) {
+      console.error("Failed to create village:", error);
+    }
+  };
+
+  const getCompletionStatus = () => {
+    const sections = {
+      basic: !!(
+        formData.name &&
+        formData.county &&
+        formData.population &&
+        formData.description &&
+        formData.latitude &&
+        formData.longitude
+      ),
+      infrastructure: !!(
+        formData.infrastructure.restaurantsCount >= 0
+      ),
+      internet: !!(
+        formData.internet.typicalSpeed > 0 &&
+        formData.internet.internetTypes.length > 0
+      ),
+      transport: !!formData.transport.busRoutes,
+      community: !!formData.community.germanCommunityCount,
+      leisure: true, // Optional
+      links: true, // Optional
+    };
+
+    return sections;
+  };
+
+  const completionStatus = getCompletionStatus();
+
+  return (
+    <div className="[--header-height:calc(--spacing(14))]">
+      <SidebarProvider className="flex flex-col">
+        <SiteHeader />
+        <div className="flex flex-1">
+          <AppSidebar />
+          <SidebarInset>
+            <div className="flex flex-1 flex-col gap-4 p-4">
+              {/* Header */}
+              <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push("/villages")}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Villages
+                    </Button>
+                  </div>
+                  <h1 className="text-3xl font-bold tracking-tight mt-2">
+                    Create New Village
+                  </h1>
+                  <p className="text-muted-foreground">
+                    Add a new village to the system with complete information
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/villages")}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSubmit} disabled={isLoading}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {isLoading ? "Creating..." : "Create Village"}
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Form Tabs */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-7 ">
+                  <TabsTrigger value="basic" className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    <p className="hidden md:flex">Basic</p>
+                    {completionStatus.basic && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="infrastructure" className="flex items-center gap-1">
+                    <Building className="h-3 w-3" />
+                    <p className="hidden md:flex">Infrastructure</p>
+                    {completionStatus.infrastructure && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="internet" className="flex items-center gap-1">
+                    <Wifi className="h-3 w-3" />
+                    <p className="hidden md:flex">Internet</p>
+                    {completionStatus.internet && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="transport" className="flex items-center gap-1">
+                    <Bus className="h-3 w-3" />
+                    <p className="hidden md:flex">Transport</p>
+                    {completionStatus.transport && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="community" className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    <p className="hidden md:flex">Community</p>
+                    {completionStatus.community && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="leisure" className="flex items-center gap-1">
+                    <Palmtree className="h-3 w-3" />
+                    <p className="hidden md:flex">Leisure</p>
+                    {completionStatus.leisure && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="links" className="flex items-center gap-1">
+                    <LinkIcon className="h-3 w-3" />
+                    <p className="hidden md:flex">Links</p>
+                    {completionStatus.links && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Basic Information Tab */}
+                <TabsContent value="basic" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Basic Information</CardTitle>
+                      <CardDescription>
+                        Essential details about the village
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">
+                            Village Name <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) =>
+                              handleBasicChange("name", e.target.value)
+                            }
+                            placeholder="Enter village name"
+                            className={errors.name ? "border-red-500" : ""}
+                          />
+                          {errors.name && (
+                            <p className="text-sm text-red-500">{errors.name}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="county">
+                            County <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="county"
+                            value={formData.county}
+                            onChange={(e) =>
+                              handleBasicChange("county", e.target.value)
+                            }
+                            placeholder="Enter county name"
+                            className={errors.county ? "border-red-500" : ""}
+                          />
+                          {errors.county && (
+                            <p className="text-sm text-red-500">{errors.county}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="population">
+                            Population <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="population"
+                            type="number"
+                            value={formData.population || ""}
+                            onChange={(e) =>
+                              handleBasicChange(
+                                "population",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            placeholder="Enter population"
+                            className={errors.population ? "border-red-500" : ""}
+                          />
+                          {errors.population && (
+                            <p className="text-sm text-red-500">
+                              {errors.population}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Coordinates <span className="text-red-500">*</span></Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              type="number"
+                              step="0.000001"
+                              value={formData.latitude || ""}
+                              onChange={(e) =>
+                                handleBasicChange(
+                                  "latitude",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              placeholder="Latitude"
+                              className={errors.latitude ? "border-red-500" : ""}
+                            />
+                            <Input
+                              type="number"
+                              step="0.000001"
+                              value={formData.longitude || ""}
+                              onChange={(e) =>
+                                handleBasicChange(
+                                  "longitude",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              placeholder="Longitude"
+                              className={errors.longitude ? "border-red-500" : ""}
+                            />
+                          </div>
+                          {(errors.latitude || errors.longitude) && (
+                            <p className="text-sm text-red-500">
+                              Valid coordinates are required
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="description">
+                          Description <span className="text-red-500">*</span>
+                        </Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) =>
+                            handleBasicChange("description", e.target.value)
+                          }
+                          placeholder="Describe the village..."
+                          rows={4}
+                          className={errors.description ? "border-red-500" : ""}
+                        />
+                        {errors.description && (
+                          <p className="text-sm text-red-500">
+                            {errors.description}
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Infrastructure Tab */}
+                <TabsContent value="infrastructure" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Infrastructure</CardTitle>
+                      <CardDescription>
+                        Amenities and services available in the village
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Shopping */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Shopping</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasGroceryStore"
+                              checked={formData.infrastructure.hasGroceryStore}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange(
+                                  "hasGroceryStore",
+                                  checked
+                                )
+                              }
+                            />
+                            <Label htmlFor="hasGroceryStore">
+                              Has Grocery Store
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasSupermarket"
+                              checked={formData.infrastructure.hasSupermarket}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasSupermarket", checked)
+                              }
+                            />
+                            <Label htmlFor="hasSupermarket">Has Supermarket</Label>
+                          </div>
+
+                          {formData.infrastructure.hasSupermarket && (
+                            <div className="space-y-2">
+                              <Label htmlFor="supermarketName">
+                                Supermarket Name
+                              </Label>
+                              <Input
+                                id="supermarketName"
+                                value={formData.infrastructure.supermarketName}
+                                onChange={(e) =>
+                                  handleInfrastructureChange(
+                                    "supermarketName",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="e.g., Lidl, Aldi"
+                              />
+                            </div>
+                          )}
+
+                          <div className="space-y-2">
+                            <Label htmlFor="storeDistanceKm">
+                              Store Distance (km)
+                            </Label>
+                            <Input
+                              id="storeDistanceKm"
+                              type="number"
+                              step="0.1"
+                              value={formData.infrastructure.storeDistanceKm || ""}
+                              onChange={(e) =>
+                                handleInfrastructureChange(
+                                  "storeDistanceKm",
+                                  e.target.value
+                                    ? parseFloat(e.target.value)
+                                    : null
+                                )
+                              }
+                              placeholder="Distance to nearest store"
+                            />
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasWeeklyMarket"
+                              checked={formData.infrastructure.hasWeeklyMarket}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange(
+                                  "hasWeeklyMarket",
+                                  checked
+                                )
+                              }
+                            />
+                            <Label htmlFor="hasWeeklyMarket">
+                              Has Weekly Market
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasBaker"
+                              checked={formData.infrastructure.hasBaker}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasBaker", checked)
+                              }
+                            />
+                            <Label htmlFor="hasBaker">Has Baker</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasButcher"
+                              checked={formData.infrastructure.hasButcher}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasButcher", checked)
+                              }
+                            />
+                            <Label htmlFor="hasButcher">Has Butcher</Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Healthcare */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Healthcare</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasHouseDoctor"
+                              checked={formData.infrastructure.hasHouseDoctor}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasHouseDoctor", checked)
+                              }
+                            />
+                            <Label htmlFor="hasHouseDoctor">Has House Doctor</Label>
+                          </div>
+
+                          {formData.infrastructure.hasHouseDoctor && (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor="doctorHours">Doctor Hours</Label>
+                                <Input
+                                  id="doctorHours"
+                                  value={formData.infrastructure.doctorHours}
+                                  onChange={(e) =>
+                                    handleInfrastructureChange(
+                                      "doctorHours",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="e.g., Mon-Fri 8-12, 14-18"
+                                />
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="doctorGerman"
+                                  checked={formData.infrastructure.doctorGerman}
+                                  onCheckedChange={(checked) =>
+                                    handleInfrastructureChange(
+                                      "doctorGerman",
+                                      checked
+                                    )
+                                  }
+                                />
+                                <Label htmlFor="doctorGerman">
+                                  Doctor Speaks German
+                                </Label>
+                              </div>
+                            </>
+                          )}
+
+                          <div className="space-y-2">
+                            <Label htmlFor="nextSpecialistKm">
+                              Distance to Specialist (km)
+                            </Label>
+                            <Input
+                              id="nextSpecialistKm"
+                              type="number"
+                              step="0.1"
+                              value={formData.infrastructure.nextSpecialistKm || ""}
+                              onChange={(e) =>
+                                handleInfrastructureChange(
+                                  "nextSpecialistKm",
+                                  e.target.value
+                                    ? parseFloat(e.target.value)
+                                    : null
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="nextHospitalKm">
+                              Distance to Hospital (km)
+                            </Label>
+                            <Input
+                              id="nextHospitalKm"
+                              type="number"
+                              step="0.1"
+                              value={formData.infrastructure.nextHospitalKm || ""}
+                              onChange={(e) =>
+                                handleInfrastructureChange(
+                                  "nextHospitalKm",
+                                  e.target.value
+                                    ? parseFloat(e.target.value)
+                                    : null
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasPharmacy"
+                              checked={formData.infrastructure.hasPharmacy}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasPharmacy", checked)
+                              }
+                            />
+                            <Label htmlFor="hasPharmacy">Has Pharmacy</Label>
+                          </div>
+
+                          {formData.infrastructure.hasPharmacy && (
+                            <div className="space-y-2">
+                              <Label htmlFor="pharmacyHours">Pharmacy Hours</Label>
+                              <Input
+                                id="pharmacyHours"
+                                value={formData.infrastructure.pharmacyHours}
+                                onChange={(e) =>
+                                  handleInfrastructureChange(
+                                    "pharmacyHours",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="e.g., Mon-Fri 8-18"
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasDentist"
+                              checked={formData.infrastructure.hasDentist}
+                              onCheckedChange={(checked:any) =>
+                                handleInfrastructureChange("hasDentist", checked)
+                              }
+                            />
+                            <Label htmlFor="hasDentist">Has Dentist</Label>
+                          </div>
+
+                          {formData.infrastructure.hasDentist && (
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="dentistGerman"
+                                checked={formData.infrastructure.dentistGerman}
+                                onCheckedChange={(checked) =>
+                                  handleInfrastructureChange(
+                                    "dentistGerman",
+                                    checked
+                                  )
+                                }
+                              />
+                              <Label htmlFor="dentistGerman">
+                                Dentist Speaks German
+                              </Label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Services */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Services</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasPost"
+                              checked={formData.infrastructure.hasPost}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasPost", checked)
+                              }
+                            />
+                            <Label htmlFor="hasPost">Has Post Office</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasAtm"
+                              checked={formData.infrastructure.hasAtm}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasAtm", checked)
+                              }
+                            />
+                            <Label htmlFor="hasAtm">Has ATM</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasBank"
+                              checked={formData.infrastructure.hasBank}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange("hasBank", checked)
+                              }
+                            />
+                            <Label htmlFor="hasBank">Has Bank</Label>
+                          </div>
+
+                          {formData.infrastructure.hasBank && (
+                            <div className="space-y-2">
+                              <Label htmlFor="bankName">Bank Name</Label>
+                              <Input
+                                id="bankName"
+                                value={formData.infrastructure.bankName}
+                                onChange={(e) =>
+                                  handleInfrastructureChange(
+                                    "bankName",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="e.g., OTP Bank"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Education */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Education</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasKindergarten"
+                              checked={formData.infrastructure.hasKindergarten}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange(
+                                  "hasKindergarten",
+                                  checked
+                                )
+                              }
+                            />
+                            <Label htmlFor="hasKindergarten">
+                              Has Kindergarten
+                            </Label>
+                          </div>
+
+                          {formData.infrastructure.hasKindergarten && (
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="kindergartenInfo">
+                                Kindergarten Info
+                              </Label>
+                              <Textarea
+                                id="kindergartenInfo"
+                                value={formData.infrastructure.kindergartenInfo}
+                                onChange={(e) =>
+                                  handleInfrastructureChange(
+                                    "kindergartenInfo",
+                                    e.target.value
+                                  )
+                                }
+                                rows={2}
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasPrimarySchool"
+                              checked={formData.infrastructure.hasPrimarySchool}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange(
+                                  "hasPrimarySchool",
+                                  checked
+                                )
+                              }
+                            />
+                            <Label htmlFor="hasPrimarySchool">
+                              Has Primary School
+                            </Label>
+                          </div>
+
+                          {formData.infrastructure.hasPrimarySchool && (
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="primarySchoolInfo">
+                                Primary School Info
+                              </Label>
+                              <Textarea
+                                id="primarySchoolInfo"
+                                value={formData.infrastructure.primarySchoolInfo}
+                                onChange={(e) =>
+                                  handleInfrastructureChange(
+                                    "primarySchoolInfo",
+                                    e.target.value
+                                  )
+                                }
+                                rows={2}
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="hasSecondarySchool"
+                              checked={formData.infrastructure.hasSecondarySchool}
+                              onCheckedChange={(checked) =>
+                                handleInfrastructureChange(
+                                  "hasSecondarySchool",
+                                  checked
+                                )
+                              }
+                            />
+                            <Label htmlFor="hasSecondarySchool">
+                              Has Secondary School
+                            </Label>
+                          </div>
+
+                          {formData.infrastructure.hasSecondarySchool && (
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="secondarySchoolInfo">
+                                Secondary School Info
+                              </Label>
+                              <Textarea
+                                id="secondarySchoolInfo"
+                                value={formData.infrastructure.secondarySchoolInfo}
+                                onChange={(e) =>
+                                  handleInfrastructureChange(
+                                    "secondarySchoolInfo",
+                                    e.target.value
+                                  )
+                                }
+                                rows={2}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Restaurants */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Dining</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="restaurantsCount">
+                              Number of Restaurants
+                            </Label>
+                            <Input
+                              id="restaurantsCount"
+                              type="number"
+                              value={formData.infrastructure.restaurantsCount || ""}
+                              onChange={(e) =>
+                                handleInfrastructureChange(
+                                  "restaurantsCount",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="restaurantInfo">
+                              Restaurant Information
+                            </Label>
+                            <Textarea
+                              id="restaurantInfo"
+                              value={formData.infrastructure.restaurantInfo}
+                              onChange={(e) =>
+                                handleInfrastructureChange(
+                                  "restaurantInfo",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Details about restaurants..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Internet Tab */}
+                <TabsContent value="internet" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Internet & Connectivity</CardTitle>
+                      <CardDescription>
+                        Internet availability and mobile coverage
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="typicalSpeed">
+                            Typical Speed (Mbps)
+                          </Label>
+                          <Input
+                            id="typicalSpeed"
+                            type="number"
+                            value={formData.internet.typicalSpeed || ""}
+                            onChange={(e) =>
+                              handleInternetChange(
+                                "typicalSpeed",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            placeholder="e.g., 100"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="mobileCoverage">
+                            Mobile Coverage
+                          </Label>
+                          <Select
+                            value={formData.internet.mobileCoverage}
+                            onValueChange={(value) =>
+                              handleInternetChange("mobileCoverage", value)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select coverage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Excellent">Excellent</SelectItem>
+                              <SelectItem value="Good">Good</SelectItem>
+                              <SelectItem value="Fair">Fair</SelectItem>
+                              <SelectItem value="Poor">Poor</SelectItem>
+                              <SelectItem value="None">None</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Internet Types Available</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {["DSL", "Fiber", "Cable", "Mobile", "Satellite"].map(
+                            (type) => (
+                              <div
+                                key={type}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={`internet-${type}`}
+                                  checked={formData.internet.internetTypes.includes(
+                                    type
+                                  )}
+                                  onCheckedChange={() => toggleInternetType(type)}
+                                />
+                                <Label htmlFor={`internet-${type}`}>{type}</Label>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Transport Tab */}
+                <TabsContent value="transport" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Transportation</CardTitle>
+                      <CardDescription>
+                        Public transport and road connections
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="busRoutes">Bus Routes</Label>
+                          <Input
+                            id="busRoutes"
+                            value={formData.transport.busRoutes}
+                            onChange={(e) =>
+                              handleTransportChange("busRoutes", e.target.value)
+                            }
+                            placeholder="e.g., Route 12, 45"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="busFrequency">Bus Frequency</Label>
+                          <Input
+                            id="busFrequency"
+                            value={formData.transport.busFrequency}
+                            onChange={(e) =>
+                              handleTransportChange("busFrequency", e.target.value)
+                            }
+                            placeholder="e.g., Every 30 minutes"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="trainStation">Nearest Train Station</Label>
+                          <Input
+                            id="trainStation"
+                            value={formData.transport.trainStation}
+                            onChange={(e) =>
+                              handleTransportChange("trainStation", e.target.value)
+                            }
+                            placeholder="Station name"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="trainDistanceKm">
+                            Train Station Distance (km)
+                          </Label>
+                          <Input
+                            id="trainDistanceKm"
+                            type="number"
+                            step="0.1"
+                            value={formData.transport.trainDistanceKm || ""}
+                            onChange={(e) =>
+                              handleTransportChange(
+                                "trainDistanceKm",
+                                e.target.value ? parseFloat(e.target.value) : null
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="motorwayDistanceKm">
+                            Motorway Distance (km)
+                          </Label>
+                          <Input
+                            id="motorwayDistanceKm"
+                            type="number"
+                            step="0.1"
+                            value={formData.transport.motorwayDistanceKm || ""}
+                            onChange={(e) =>
+                              handleTransportChange(
+                                "motorwayDistanceKm",
+                                e.target.value ? parseFloat(e.target.value) : null
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Community Tab */}
+                <TabsContent value="community" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Community & Culture</CardTitle>
+                      <CardDescription>
+                        Social aspects and community life
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="germanCommunityCount">
+                            German-Speaking Community Size
+                          </Label>
+                          <Input
+                            id="germanCommunityCount"
+                            type="number"
+                            value={formData.community.germanCommunityCount || ""}
+                            onChange={(e) =>
+                              handleCommunityChange(
+                                "germanCommunityCount",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            placeholder="Estimated count"
+                          />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="associations">
+                            Local Associations & Clubs
+                          </Label>
+                          <Textarea
+                            id="associations"
+                            value={formData.community.associations}
+                            onChange={(e) =>
+                              handleCommunityChange("associations", e.target.value)
+                            }
+                            placeholder="List local associations..."
+                            rows={3}
+                          />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="festivals">Festivals & Events</Label>
+                          <Textarea
+                            id="festivals"
+                            value={formData.community.festivals}
+                            onChange={(e) =>
+                              handleCommunityChange("festivals", e.target.value)
+                            }
+                            placeholder="Describe annual festivals..."
+                            rows={3}
+                          />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="atmosphere">Village Atmosphere</Label>
+                          <Textarea
+                            id="atmosphere"
+                            value={formData.community.atmosphere}
+                            onChange={(e) =>
+                              handleCommunityChange("atmosphere", e.target.value)
+                            }
+                            placeholder="Describe the general atmosphere and character..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Leisure Tab */}
+                <TabsContent value="leisure" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Leisure & Recreation</CardTitle>
+                      <CardDescription>
+                        Recreational facilities and attractions
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="nearLakes"
+                            checked={formData.leisure.nearLakes}
+                            onCheckedChange={(checked) =>
+                              handleLeisureChange("nearLakes", checked)
+                            }
+                          />
+                          <Label htmlFor="nearLakes">Near Lakes</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="hikingTrails"
+                            checked={formData.leisure.hikingTrails}
+                            onCheckedChange={(checked) =>
+                              handleLeisureChange("hikingTrails", checked)
+                            }
+                          />
+                          <Label htmlFor="hikingTrails">Hiking Trails</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="bicyclePaths"
+                            checked={formData.leisure.bicyclePaths}
+                            onCheckedChange={(checked) =>
+                              handleLeisureChange("bicyclePaths", checked)
+                            }
+                          />
+                          <Label htmlFor="bicyclePaths">Bicycle Paths</Label>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="spaDistanceKm">
+                            Distance to Spa (km)
+                          </Label>
+                          <Input
+                            id="spaDistanceKm"
+                            type="number"
+                            step="0.1"
+                            value={formData.leisure.spaDistanceKm || ""}
+                            onChange={(e) =>
+                              handleLeisureChange(
+                                "spaDistanceKm",
+                                e.target.value ? parseFloat(e.target.value) : null
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="nearestTownDistanceKm">
+                            Distance to Nearest Town (km)
+                          </Label>
+                          <Input
+                            id="nearestTownDistanceKm"
+                            type="number"
+                            step="0.1"
+                            value={formData.leisure.nearestTownDistanceKm || ""}
+                            onChange={(e) =>
+                              handleLeisureChange(
+                                "nearestTownDistanceKm",
+                                e.target.value ? parseFloat(e.target.value) : null
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="culturalSites">Cultural Sites</Label>
+                          <Textarea
+                            id="culturalSites"
+                            value={formData.leisure.culturalSites}
+                            onChange={(e) =>
+                              handleLeisureChange("culturalSites", e.target.value)
+                            }
+                            placeholder="Describe cultural attractions..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Links Tab */}
+                <TabsContent value="links" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>External Links</CardTitle>
+                          <CardDescription>
+                            Useful links about the village
+                          </CardDescription>
+                        </div>
+                        <Button onClick={addLink} size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Link
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {formData.links.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No links added yet. Click "Add Link" to get started.
+                        </div>
+                      ) : (
+                        formData.links.map((link, index) => (
+                          <div
+                            key={index}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+                          >
+                            <div className="space-y-2">
+                              <Label>Link Type</Label>
+                              <Select
+                                value={link.linkType}
+                                onValueChange={(value: any) =>
+                                  updateLink(index, "linkType", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="WEBSITE">Website</SelectItem>
+                                  <SelectItem value="WIKIPEDIA">
+                                    Wikipedia
+                                  </SelectItem>
+                                  <SelectItem value="YOUTUBE">YouTube</SelectItem>
+                                  <SelectItem value="OTHER">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2 md:col-span-2">
+                              <div className="flex items-center justify-between">
+                                <Label>URL</Label>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeLink(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <Input
+                                value={link.url}
+                                onChange={(e) =>
+                                  updateLink(index, "url", e.target.value)
+                                }
+                                placeholder="https://..."
+                              />
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+
+              {/* Bottom Action Buttons */}
+              <div className="flex items-center justify-between pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/villages")}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSubmit} disabled={isLoading}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isLoading ? "Creating..." : "Create Village"}
+                </Button>
+              </div>
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </div>
+  );
+};
+
+export default CreateVillagePage;

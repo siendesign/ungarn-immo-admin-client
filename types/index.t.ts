@@ -207,3 +207,139 @@ export interface UserStatsResponse {
   }>;
   verificationStats: any[];
 }
+
+export interface Village {
+  id: string;
+  name: string;
+  county: string;
+  population: number;
+  description: string;
+  latitude: number;
+  longitude: number;
+  status: "IN_REVIEW" | "PUBLISHED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+  infrastructure?: VillageInfrastructure;
+  internet?: VillageInternet;
+  transport?: VillageTransport;
+  community?: VillageCommunity;
+  leisure?: VillageLeisure;
+  links?: VillageLink[];
+  _count?: {
+    exposes: number;
+  };
+}
+
+export interface VillageInfrastructure {
+  villageId: string;
+  hasGroceryStore: boolean;
+  hasSupermarket: boolean;
+  supermarketName?: string;
+  storeDistanceKm?: number;
+  hasWeeklyMarket: boolean;
+  hasBaker: boolean;
+  hasButcher: boolean;
+  hasHouseDoctor: boolean;
+  doctorHours?: string;
+  doctorGerman: boolean;
+  nextSpecialistKm?: number;
+  nextHospitalKm?: number;
+  hasPharmacy: boolean;
+  pharmacyHours?: string;
+  hasDentist: boolean;
+  dentistGerman: boolean;
+  hasPost: boolean;
+  hasAtm: boolean;
+  hasBank: boolean;
+  bankName?: string;
+  hasKindergarten: boolean;
+  kindergartenInfo?: string;
+  hasPrimarySchool: boolean;
+  primarySchoolInfo?: string;
+  hasSecondarySchool: boolean;
+  secondarySchoolInfo?: string;
+  restaurantsCount: number;
+  restaurantInfo?: string;
+}
+
+export interface VillageInternet {
+  villageId: string;
+  typicalSpeed: number;
+  internetTypes: string[];
+  mobileCoverage?: string;
+}
+
+export interface VillageTransport {
+  villageId: string;
+  busRoutes: string;
+  busFrequency: string;
+  trainStation?: string;
+  trainDistanceKm?: number;
+  motorwayDistanceKm?: number;
+}
+
+export interface VillageCommunity {
+  villageId: string;
+  germanCommunityCount: number;
+  associations: string;
+  festivals: string;
+  atmosphere: string;
+}
+
+export interface VillageLeisure {
+  villageId: string;
+  nearLakes: boolean;
+  hikingTrails: boolean;
+  bicyclePaths: boolean;
+  spaDistanceKm?: number;
+  culturalSites: string;
+  nearestTownDistanceKm?: number;
+}
+
+export interface VillageLink {
+  id: string;
+  villageId: string;
+  linkType: "WEBSITE" | "WIKIPEDIA" | "YOUTUBE" | "OTHER";
+  url: string;
+}
+
+export interface VillagesResponse {
+  villages: Village[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface VillageStatsResponse {
+  overview: {
+    totalVillages: number;
+    publishedVillages: number;
+    inReviewVillages: number;
+    rejectedVillages: number;
+    recentVillageCount: number;
+    totalPopulation: number;
+    averagePopulation: number;
+  };
+  villagesByCounty: Array<{
+    county: string;
+    count: number;
+  }>;
+  topVillages: Array<{
+    id: string;
+    name: string;
+    county: string;
+    propertiesCount: number;
+    population: number;
+  }>;
+  recentVillages: Array<{
+    id: string;
+    name: string;
+    county: string;
+    status: string;
+    propertiesCount: number;
+    createdAt: string;
+  }>;
+}

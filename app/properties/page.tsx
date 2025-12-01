@@ -68,12 +68,15 @@ import {
   RefreshCw,
   Download,
   Plus,
+  Router,
 } from "lucide-react";
 import { useGetPropertiesQuery } from "@/state/api";
 import { Property } from "@/types/index.t";
 import { PropertyDetailModal } from "@/components/property-detail-modal";
+import { useRouter } from "next/navigation";
 
 const AdminPage = () => {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("all");
@@ -234,7 +237,7 @@ console.log("properties data:", properties);
             <div className="flex flex-1 flex-col gap-4 p-4">
               {/* Header Section */}
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                   <div>
                     <h1 className="text-3xl font-bold tracking-tight">
                       Property Management
@@ -252,10 +255,10 @@ console.log("properties data:", properties);
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
-                    <Button>
+                    {/* <Button>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Property
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
 
@@ -536,7 +539,7 @@ console.log("properties data:", properties);
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleViewProperty(property)}
+                            onClick={() => router.push(`/properties/review/${property.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
@@ -550,11 +553,17 @@ console.log("properties data:", properties);
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
+                              {/* <DropdownMenuItem
                                 onClick={() => handleViewProperty(property)}
                               >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
+                              </DropdownMenuItem> */}
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/properties/review/${property.id}`)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Review
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditProperty(property)}
@@ -640,7 +649,7 @@ console.log("properties data:", properties);
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={() => handleViewProperty(property)}
+                                    onClick={() => router.push(`/properties/review/${property.id}`)}
                                   >
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
