@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+// Import CSS
+import "leaflet/dist/leaflet.css";
 // ============================================
 // Types and Interfaces
 // ============================================
 
-type SelectionMode = 'area' | 'pinpoint';
-type AreaType = 'circle' | 'polygon';
+type SelectionMode = "area" | "pinpoint";
+type AreaType = "circle" | "polygon";
 
 interface Location {
   lat: number;
@@ -46,11 +47,11 @@ interface SearchResult {
 
 // Radius options in meters
 const RADIUS_OPTIONS = [
-  { label: '500m', value: 500 },
-  { label: '1km', value: 1000 },
-  { label: '2km', value: 2000 },
-  { label: '5km', value: 5000 },
-  { label: '10km', value: 10000 },
+  { label: "500m", value: 500 },
+  { label: "1km", value: 1000 },
+  { label: "2km", value: 2000 },
+  { label: "5km", value: 5000 },
+  { label: "10km", value: 10000 },
 ];
 
 // ============================================
@@ -82,7 +83,7 @@ function LocationSearch({
 }: {
   onLocationSelect: (lat: number, lng: number, address: string) => void;
 }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -91,13 +92,16 @@ function LocationSearch({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowResults(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -118,7 +122,7 @@ function LocationSearch({
         setResults(data);
         setShowResults(true);
       } catch (error) {
-        console.error('Search error:', error);
+        console.error("Search error:", error);
         setResults([]);
       } finally {
         setIsSearching(false);
@@ -129,13 +133,17 @@ function LocationSearch({
   }, [debouncedQuery]);
 
   const handleSelect = (result: SearchResult) => {
-    onLocationSelect(parseFloat(result.lat), parseFloat(result.lon), result.display_name);
-    setQuery(result.display_name.split(',')[0]);
+    onLocationSelect(
+      parseFloat(result.lat),
+      parseFloat(result.lon),
+      result.display_name
+    );
+    setQuery(result.display_name.split(",")[0]);
     setShowResults(false);
   };
 
   const handleClear = () => {
-    setQuery('');
+    setQuery("");
     setResults([]);
     setShowResults(false);
   };
@@ -190,7 +198,12 @@ function LocationSearch({
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -232,10 +245,10 @@ function LocationSearch({
                 </svg>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {result.display_name.split(',')[0]}
+                    {result.display_name.split(",")[0]}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {result.display_name.split(',').slice(1).join(',').trim()}
+                    {result.display_name.split(",").slice(1).join(",").trim()}
                   </p>
                 </div>
               </div>
@@ -244,11 +257,16 @@ function LocationSearch({
         </div>
       )}
 
-      {showResults && query.length >= 3 && !isSearching && results.length === 0 && (
-        <div className="absolute z-[1001] w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500 text-center">No locations found</p>
-        </div>
-      )}
+      {showResults &&
+        query.length >= 3 &&
+        !isSearching &&
+        results.length === 0 && (
+          <div className="absolute z-[1001] w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+            <p className="text-sm text-gray-500 text-center">
+              No locations found
+            </p>
+          </div>
+        )}
     </div>
   );
 }
@@ -265,65 +283,75 @@ function LocationPickerMapInner({
 }: LocationPickerProps) {
   // Dynamic imports for Leaflet (only runs on client)
   const [leafletLoaded, setLeafletLoaded] = useState(false);
-  const [L, setL] = useState<typeof import('leaflet') | null>(null);
-  const [ReactLeaflet, setReactLeaflet] = useState<typeof import('react-leaflet') | null>(null);
+  const [L, setL] = useState<typeof import("leaflet") | null>(null);
+  const [ReactLeaflet, setReactLeaflet] = useState<
+    typeof import("react-leaflet") | null
+  >(null);
 
   useEffect(() => {
     // Import Leaflet and React-Leaflet dynamically
-    Promise.all([
-      import('leaflet'),
-      import('react-leaflet'),
-    ]).then(([leaflet, reactLeaflet]) => {
-      // Import CSS
-      import('leaflet/dist/leaflet.css');
-      setL(leaflet);
-      setReactLeaflet(reactLeaflet);
-      setLeafletLoaded(true);
-    });
+    Promise.all([import("leaflet"), import("react-leaflet")]).then(
+      ([leaflet, reactLeaflet]) => {
+        setL(leaflet);
+        setReactLeaflet(reactLeaflet);
+        setLeafletLoaded(true);
+      }
+    );
   }, []);
 
-  const [mode, setMode] = useState<SelectionMode>('area');
-  const [areaType, setAreaType] = useState<AreaType>('circle');
-  const [areaCenter, setAreaCenter] = useState<{ lat: number; lng: number } | null>(
-    initialData?.area?.center || null
+  const [mode, setMode] = useState<SelectionMode>("area");
+  const [areaType, setAreaType] = useState<AreaType>("circle");
+  const [areaCenter, setAreaCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(initialData?.area?.center || null);
+  const [radius, setRadius] = useState<number>(
+    initialData?.area?.radius || 1000
   );
-  const [radius, setRadius] = useState<number>(initialData?.area?.radius || 1000);
-  const [polygonPoints, setPolygonPoints] = useState<{ lat: number; lng: number }[]>(
-    initialData?.area?.points || []
-  );
+  const [polygonPoints, setPolygonPoints] = useState<
+    { lat: number; lng: number }[]
+  >(initialData?.area?.points || []);
   const [pinpoint, setPinpoint] = useState<{ lat: number; lng: number } | null>(
     initialData?.pinpoint || null
   );
-  const [areaAddress, setAreaAddress] = useState<string>('');
-  const [pinpointAddress, setPinpointAddress] = useState<string>('');
+  const [areaAddress, setAreaAddress] = useState<string>("");
+  const [pinpointAddress, setPinpointAddress] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [flyToPosition, setFlyToPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [flyToPosition, setFlyToPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   // Reverse geocoding
-  const fetchAddress = useCallback(async (lat: number, lng: number): Promise<string> => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`
-      );
-      const data = await response.json();
-      return data.display_name || 'Address not found';
-    } catch (error) {
-      console.error('Error fetching address:', error);
-      return 'Unable to fetch address';
-    }
-  }, []);
+  const fetchAddress = useCallback(
+    async (lat: number, lng: number): Promise<string> => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`
+        );
+        const data = await response.json();
+        return data.display_name || "Address not found";
+      } catch (error) {
+        console.error("Error fetching address:", error);
+        return "Unable to fetch address";
+      }
+    },
+    []
+  );
 
   // Build and emit location data
   const emitLocationData = useCallback(
-    (data: Partial<{
-      areaCenter: { lat: number; lng: number } | null;
-      radius: number;
-      polygonPoints: { lat: number; lng: number }[];
-      pinpoint: { lat: number; lng: number } | null;
-      areaType: AreaType;
-      areaAddress: string;
-      pinpointAddress: string;
-    }>) => {
+    (
+      data: Partial<{
+        areaCenter: { lat: number; lng: number } | null;
+        radius: number;
+        polygonPoints: { lat: number; lng: number }[];
+        pinpoint: { lat: number; lng: number } | null;
+        areaType: AreaType;
+        areaAddress: string;
+        pinpointAddress: string;
+      }>
+    ) => {
       const currentAreaCenter = data.areaCenter ?? areaCenter;
       const currentRadius = data.radius ?? radius;
       const currentPolygonPoints = data.polygonPoints ?? polygonPoints;
@@ -332,9 +360,9 @@ function LocationPickerMapInner({
 
       const locationData: LocationData = {};
 
-      if (currentAreaType === 'circle' && currentAreaCenter) {
+      if (currentAreaType === "circle" && currentAreaCenter) {
         locationData.area = {
-          type: 'circle',
+          type: "circle",
           center: {
             lat: currentAreaCenter.lat,
             lng: currentAreaCenter.lng,
@@ -342,9 +370,12 @@ function LocationPickerMapInner({
           },
           radius: currentRadius,
         };
-      } else if (currentAreaType === 'polygon' && currentPolygonPoints.length >= 3) {
+      } else if (
+        currentAreaType === "polygon" &&
+        currentPolygonPoints.length >= 3
+      ) {
         locationData.area = {
-          type: 'polygon',
+          type: "polygon",
           points: currentPolygonPoints.map((p) => ({ lat: p.lat, lng: p.lng })),
         };
       }
@@ -359,7 +390,16 @@ function LocationPickerMapInner({
 
       onLocationChange?.(locationData);
     },
-    [areaCenter, radius, polygonPoints, pinpoint, areaType, areaAddress, pinpointAddress, onLocationChange]
+    [
+      areaCenter,
+      radius,
+      polygonPoints,
+      pinpoint,
+      areaType,
+      areaAddress,
+      pinpointAddress,
+      onLocationChange,
+    ]
   );
 
   // Handle search result selection
@@ -368,11 +408,11 @@ function LocationPickerMapInner({
       const newPosition = { lat, lng };
       setFlyToPosition(newPosition);
 
-      if (mode === 'area' && areaType === 'circle') {
+      if (mode === "area" && areaType === "circle") {
         setAreaCenter(newPosition);
         setAreaAddress(address);
         emitLocationData({ areaCenter: newPosition, areaAddress: address });
-      } else if (mode === 'pinpoint') {
+      } else if (mode === "pinpoint") {
         setPinpoint(newPosition);
         setPinpointAddress(address);
         emitLocationData({ pinpoint: newPosition, pinpointAddress: address });
@@ -429,8 +469,13 @@ function LocationPickerMapInner({
       setAreaType(type);
       setAreaCenter(null);
       setPolygonPoints([]);
-      setAreaAddress('');
-      emitLocationData({ areaCenter: null, polygonPoints: [], areaType: type, areaAddress: '' });
+      setAreaAddress("");
+      emitLocationData({
+        areaCenter: null,
+        polygonPoints: [],
+        areaType: type,
+        areaAddress: "",
+      });
     },
     [emitLocationData]
   );
@@ -438,14 +483,14 @@ function LocationPickerMapInner({
   const handleClearArea = useCallback(() => {
     setAreaCenter(null);
     setPolygonPoints([]);
-    setAreaAddress('');
-    emitLocationData({ areaCenter: null, polygonPoints: [], areaAddress: '' });
+    setAreaAddress("");
+    emitLocationData({ areaCenter: null, polygonPoints: [], areaAddress: "" });
   }, [emitLocationData]);
 
   const handleClearPinpoint = useCallback(() => {
     setPinpoint(null);
-    setPinpointAddress('');
-    emitLocationData({ pinpoint: null, pinpointAddress: '' });
+    setPinpointAddress("");
+    emitLocationData({ pinpoint: null, pinpointAddress: "" });
   }, [emitLocationData]);
 
   const handleUndoPolygonPoint = useCallback(() => {
@@ -455,24 +500,24 @@ function LocationPickerMapInner({
   }, [polygonPoints, emitLocationData]);
 
   const hasAreaSelection =
-    (areaType === 'circle' && areaCenter) ||
-    (areaType === 'polygon' && polygonPoints.length >= 3);
+    (areaType === "circle" && areaCenter) ||
+    (areaType === "polygon" && polygonPoints.length >= 3);
 
   const getInstructionText = () => {
-    if (mode === 'area') {
-      if (areaType === 'circle') {
+    if (mode === "area") {
+      if (areaType === "circle") {
         return areaCenter
-          ? 'Click elsewhere to move the area, or switch to pinpoint mode'
-          : 'Click on the map to select a general area';
+          ? "Click elsewhere to move the area, or switch to pinpoint mode"
+          : "Click on the map to select a general area";
       } else {
         return polygonPoints.length < 3
           ? `Click to add points (${polygonPoints.length}/3 minimum)`
-          : 'Click to add more points, or switch to pinpoint mode';
+          : "Click to add more points, or switch to pinpoint mode";
       }
     } else {
       return pinpoint
-        ? 'Click elsewhere to move the pin'
-        : 'Click on the map to place an exact location';
+        ? "Click elsewhere to move the pin"
+        : "Click on the map to place an exact location";
     }
   };
 
@@ -489,13 +534,22 @@ function LocationPickerMapInner({
     );
   }
 
-  const { MapContainer, TileLayer, Marker, Circle, Polygon, useMapEvents, useMap } = ReactLeaflet;
+  const {
+    MapContainer,
+    TileLayer,
+    Marker,
+    Circle,
+    Polygon,
+    useMapEvents,
+    useMap,
+  } = ReactLeaflet;
 
   // Create marker icon
   const defaultIcon = new L.Icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl:
+      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
@@ -506,8 +560,8 @@ function LocationPickerMapInner({
   function MapInteraction() {
     useMapEvents({
       click(e) {
-        if (mode === 'area') {
-          if (areaType === 'circle') {
+        if (mode === "area") {
+          if (areaType === "circle") {
             handleAreaCenterChange(e.latlng.lat, e.latlng.lng);
           } else {
             handlePolygonPointAdd(e.latlng.lat, e.latlng.lng);
@@ -525,7 +579,9 @@ function LocationPickerMapInner({
     const map = useMap();
     useEffect(() => {
       if (flyToPosition) {
-        map.flyTo([flyToPosition.lat, flyToPosition.lng], 15, { duration: 1.5 });
+        map.flyTo([flyToPosition.lat, flyToPosition.lng], 15, {
+          duration: 1.5,
+        });
         setFlyToPosition(null);
       }
     }, [map, flyToPosition]);
@@ -553,45 +609,45 @@ function LocationPickerMapInner({
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex rounded-lg overflow-hidden border border-gray-300">
           <button
-            onClick={() => setMode('area')}
+            onClick={() => setMode("area")}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
-              mode === 'area'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+              mode === "area"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
             }`}
           >
             General Area
           </button>
           <button
-            onClick={() => setMode('pinpoint')}
+            onClick={() => setMode("pinpoint")}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
-              mode === 'pinpoint'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+              mode === "pinpoint"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
             }`}
           >
             Exact Location
           </button>
         </div>
 
-        {mode === 'area' && (
+        {mode === "area" && (
           <div className="flex rounded-lg overflow-hidden border border-gray-300">
             <button
-              onClick={() => handleAreaTypeChange('circle')}
+              onClick={() => handleAreaTypeChange("circle")}
               className={`px-3 py-2 text-sm font-medium transition-colors ${
-                areaType === 'circle'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                areaType === "circle"
+                  ? "bg-green-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               Circle
             </button>
             <button
-              onClick={() => handleAreaTypeChange('polygon')}
+              onClick={() => handleAreaTypeChange("polygon")}
               className={`px-3 py-2 text-sm font-medium transition-colors ${
-                areaType === 'polygon'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                areaType === "polygon"
+                  ? "bg-green-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               Custom Shape
@@ -599,7 +655,7 @@ function LocationPickerMapInner({
           </div>
         )}
 
-        {mode === 'area' && areaType === 'circle' && (
+        {mode === "area" && areaType === "circle" && (
           <select
             value={radius}
             onChange={(e) => handleRadiusChange(Number(e.target.value))}
@@ -613,14 +669,16 @@ function LocationPickerMapInner({
           </select>
         )}
 
-        {mode === 'area' && areaType === 'polygon' && polygonPoints.length > 0 && (
-          <button
-            onClick={handleUndoPolygonPoint}
-            className="px-3 py-2 text-sm text-orange-600 hover:text-orange-700 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors"
-          >
-            Undo Last Point
-          </button>
-        )}
+        {mode === "area" &&
+          areaType === "polygon" &&
+          polygonPoints.length > 0 && (
+            <button
+              onClick={handleUndoPolygonPoint}
+              className="px-3 py-2 text-sm text-orange-600 hover:text-orange-700 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors"
+            >
+              Undo Last Point
+            </button>
+          )}
       </div>
 
       {/* Map Container */}
@@ -628,7 +686,7 @@ function LocationPickerMapInner({
         <MapContainer
           center={defaultCenter}
           zoom={defaultZoom}
-          style={{ height: '450px', width: '100%' }}
+          style={{ height: "450px", width: "100%" }}
           className="z-0"
         >
           <TileLayer
@@ -639,26 +697,28 @@ function LocationPickerMapInner({
           <MapInteraction />
           <FlyToLocation />
 
-          {areaType === 'circle' && areaCenter && (
+          {areaType === "circle" && areaCenter && (
             <Circle
               center={[areaCenter.lat, areaCenter.lng]}
               radius={radius}
               pathOptions={{
-                color: '#3b82f6',
-                fillColor: '#3b82f6',
+                color: "#3b82f6",
+                fillColor: "#3b82f6",
                 fillOpacity: 0.2,
                 weight: 2,
               }}
             />
           )}
 
-          {areaType === 'polygon' && polygonPoints.length >= 3 && (
+          {areaType === "polygon" && polygonPoints.length >= 3 && (
             <>
               <Polygon
-                positions={polygonPoints.map((p) => [p.lat, p.lng] as [number, number])}
+                positions={polygonPoints.map(
+                  (p) => [p.lat, p.lng] as [number, number]
+                )}
                 pathOptions={{
-                  color: '#22c55e',
-                  fillColor: '#22c55e',
+                  color: "#22c55e",
+                  fillColor: "#22c55e",
                   fillOpacity: 0.2,
                   weight: 2,
                 }}
@@ -667,15 +727,15 @@ function LocationPickerMapInner({
             </>
           )}
 
-          {areaType === 'polygon' &&
+          {areaType === "polygon" &&
             polygonPoints.map((point, index) => (
               <Circle
                 key={index}
                 center={[point.lat, point.lng]}
                 radius={50}
                 pathOptions={{
-                  color: '#22c55e',
-                  fillColor: '#22c55e',
+                  color: "#22c55e",
+                  fillColor: "#22c55e",
                   fillOpacity: 0.8,
                   weight: 2,
                 }}
@@ -683,7 +743,10 @@ function LocationPickerMapInner({
             ))}
 
           {pinpoint && (
-            <Marker position={[pinpoint.lat, pinpoint.lng]} icon={defaultIcon} />
+            <Marker
+              position={[pinpoint.lat, pinpoint.lng]}
+              icon={defaultIcon}
+            />
           )}
         </MapContainer>
 
@@ -694,12 +757,12 @@ function LocationPickerMapInner({
         <div className="absolute bottom-4 left-4 z-[1000]">
           <div
             className={`px-3 py-1 rounded-full text-xs font-medium ${
-              mode === 'area'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-purple-100 text-purple-700'
+              mode === "area"
+                ? "bg-blue-100 text-blue-700"
+                : "bg-purple-100 text-purple-700"
             }`}
           >
-            {mode === 'area' ? `Area Mode (${areaType})` : 'Pinpoint Mode'}
+            {mode === "area" ? `Area Mode (${areaType})` : "Pinpoint Mode"}
           </div>
         </div>
       </div>
@@ -709,15 +772,15 @@ function LocationPickerMapInner({
         <div
           className={`rounded-lg p-4 border ${
             hasAreaSelection
-              ? 'bg-blue-50 border-blue-200'
-              : 'bg-gray-50 border-gray-200'
+              ? "bg-blue-50 border-blue-200"
+              : "bg-gray-50 border-gray-200"
           }`}
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium text-gray-900 flex items-center gap-2">
               <span
                 className={`w-3 h-3 rounded-full ${
-                  hasAreaSelection ? 'bg-blue-500' : 'bg-gray-300'
+                  hasAreaSelection ? "bg-blue-500" : "bg-gray-300"
                 }`}
               />
               General Area
@@ -734,20 +797,20 @@ function LocationPickerMapInner({
 
           {hasAreaSelection ? (
             <div className="space-y-2">
-              {areaType === 'circle' && areaCenter && (
+              {areaType === "circle" && areaCenter && (
                 <>
                   <div className="text-sm">
-                    <span className="text-gray-500">Center:</span>{' '}
+                    <span className="text-gray-500">Center:</span>{" "}
                     <span className="font-mono">
                       {areaCenter.lat.toFixed(4)}, {areaCenter.lng.toFixed(4)}
                     </span>
                   </div>
                   <div className="text-sm">
-                    <span className="text-gray-500">Radius:</span>{' '}
+                    <span className="text-gray-500">Radius:</span>{" "}
                     {radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}
                   </div>
                   <div className="text-sm">
-                    <span className="text-gray-500">Area:</span>{' '}
+                    <span className="text-gray-500">Area:</span>{" "}
                     {isLoading ? (
                       <span className="text-gray-400">Loading...</span>
                     ) : (
@@ -756,36 +819,40 @@ function LocationPickerMapInner({
                   </div>
                 </>
               )}
-              {areaType === 'polygon' && (
+              {areaType === "polygon" && (
                 <div className="text-sm">
-                  <span className="text-gray-500">Shape:</span> {polygonPoints.length}{' '}
-                  points
+                  <span className="text-gray-500">Shape:</span>{" "}
+                  {polygonPoints.length} points
                 </div>
               )}
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              {mode === 'area'
-                ? 'Click on the map to select an area'
-                : 'Switch to Area mode to select'}
+              {mode === "area"
+                ? "Click on the map to select an area"
+                : "Switch to Area mode to select"}
             </p>
           )}
         </div>
 
         <div
           className={`rounded-lg p-4 border ${
-            pinpoint ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'
+            pinpoint
+              ? "bg-purple-50 border-purple-200"
+              : "bg-gray-50 border-gray-200"
           }`}
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium text-gray-900 flex items-center gap-2">
               <span
                 className={`w-3 h-3 rounded-full ${
-                  pinpoint ? 'bg-purple-500' : 'bg-gray-300'
+                  pinpoint ? "bg-purple-500" : "bg-gray-300"
                 }`}
               />
               Exact Location
-              <span className="text-xs font-normal text-gray-500">(Optional)</span>
+              <span className="text-xs font-normal text-gray-500">
+                (Optional)
+              </span>
             </h3>
             {pinpoint && (
               <button
@@ -800,13 +867,13 @@ function LocationPickerMapInner({
           {pinpoint ? (
             <div className="space-y-2">
               <div className="text-sm">
-                <span className="text-gray-500">Coordinates:</span>{' '}
+                <span className="text-gray-500">Coordinates:</span>{" "}
                 <span className="font-mono">
                   {pinpoint.lat.toFixed(6)}, {pinpoint.lng.toFixed(6)}
                 </span>
               </div>
               <div className="text-sm">
-                <span className="text-gray-500">Address:</span>{' '}
+                <span className="text-gray-500">Address:</span>{" "}
                 {isLoading ? (
                   <span className="text-gray-400">Loading...</span>
                 ) : (
@@ -816,9 +883,9 @@ function LocationPickerMapInner({
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              {mode === 'pinpoint'
-                ? 'Click on the map to pin exact location'
-                : 'Switch to Exact Location mode to pin'}
+              {mode === "pinpoint"
+                ? "Click on the map to pin exact location"
+                : "Switch to Exact Location mode to pin"}
             </p>
           )}
         </div>
