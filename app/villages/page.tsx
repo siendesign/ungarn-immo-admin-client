@@ -67,6 +67,7 @@ import {
   Clock,
   Building,
   Map,
+  ImageIcon,
 } from "lucide-react";
 import {
   useGetAllVillagesQuery,
@@ -416,6 +417,7 @@ const VillageAdminPage = () => {
                         <Table>
                           <TableHeader>
                             <TableRow>
+                              <TableHead className="w-16">Thumbnail</TableHead>
                               <TableHead>Village</TableHead>
                               <TableHead>County</TableHead>
                               <TableHead>Population</TableHead>
@@ -431,6 +433,25 @@ const VillageAdminPage = () => {
                           <TableBody>
                             {villagesData.villages.map((village) => (
                               <TableRow key={village.id}>
+                                <TableCell>
+                                  <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                                    {(village as any).thumbnailUrl ? (
+                                      /* eslint-disable-next-line @next/next/no-img-element */
+                                      <img
+                                        src={(village as any).thumbnailUrl}
+                                        alt={village.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                          target.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                                        }}
+                                      />
+                                    ) : (
+                                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </TableCell>
                                 <TableCell>
                                   <div className="flex flex-col">
                                     <span className="font-medium">
@@ -501,10 +522,10 @@ const VillageAdminPage = () => {
                                         Actions
                                       </DropdownMenuLabel>
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem>
+                                      {/* <DropdownMenuItem>
                                         <Eye className="h-4 w-4 mr-2" />
                                         View Details
-                                      </DropdownMenuItem>
+                                      </DropdownMenuItem> */}
                                       <DropdownMenuItem onClick={() => {router.push(`/villages/edit/${village.id}`)}}>
                                         <Edit className="h-4 w-4 mr-2" />
                                         Edit
@@ -555,8 +576,31 @@ const VillageAdminPage = () => {
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {villagesData.villages.map((village) => (
-                          <Card key={village.id} className="overflow-hidden">
-                            <CardHeader>
+                          <Card key={village.id} className="overflow-hidden pt-0">
+                            {/* Thumbnail Image */}
+                            <div className="relative w-full h-40 bg-muted ">
+                              {(village as any).thumbnailUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={(village as any).thumbnailUrl}
+                                  alt={village.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    if (target.nextElementSibling) {
+                                      (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className={`absolute inset-0 flex items-center justify-center ${(village as any).thumbnailUrl ? 'hidden' : 'flex'}`}
+                              >
+                                <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
+                              </div>
+                            </div>
+                            <CardHeader className="pb-2">
                               <div className="flex items-start justify-between">
                                 <div>
                                   <CardTitle className="text-lg">
@@ -600,7 +644,7 @@ const VillageAdminPage = () => {
                               </div>
                             </CardContent>
                             <CardFooter className="flex justify-between">
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => {router.push(`/villages/edit/${village.id}`)}}>
                                 <Eye className="h-4 w-4 mr-1" />
                                 View
                               </Button>
@@ -615,7 +659,7 @@ const VillageAdminPage = () => {
                                     Actions
                                   </DropdownMenuLabel>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {router.push(`/villages/edit/${village.id}`)}}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>

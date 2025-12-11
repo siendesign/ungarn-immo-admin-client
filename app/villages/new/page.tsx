@@ -25,7 +25,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import React, { useState } from "react";
+import { Progress } from "@/components/ui/progress";
+import React, { useState, useRef, useCallback } from "react";
 import {
   MapPin,
   Building,
@@ -39,9 +40,17 @@ import {
   Plus,
   ArrowLeft,
   CheckCircle,
+  Upload,
+  ImageIcon,
+  Trash2,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useCreateVillageMutation } from "@/state/api";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import useImageUpload from "@/hooks/use-imageUpload";
 
 interface VillageFormData {
   // Basic Info
@@ -51,6 +60,7 @@ interface VillageFormData {
   description: string;
   latitude: number;
   longitude: number;
+  thumbnailUrl: string | null;
 
   // Infrastructure
   infrastructure: {
@@ -125,10 +135,272 @@ interface VillageFormData {
   }>;
 }
 
+// Thumbnail Upload Component
+interface ThumbnailUploadProps {
+  thumbnailUrl: string | null;
+  onUpload: (url: string) => void;
+  onRemove: () => void;
+}
+
+const ThumbnailUpload: React.FC<ThumbnailUploadProps> = ({
+  thumbnailUrl,
+  onUpload,
+  onRemove,
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(thumbnailUrl);
+
+  const {
+    uploadImage,
+    deleteImage,
+    isUploading,
+    isDeleting,
+    progress,
+    error,
+    reset: resetUpload,
+  } = useImageUpload({
+    bucket: "listings", // Make sure this bucket exists in Supabase
+    folder: "thumbnails",
+    maxSizeMB: 5,
+    allowedTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
+
+  const handleFileSelect = useCallback(
+    async (file: File) => {
+      // If there's an existing image, delete it first
+      if (previewUrl && previewUrl.includes("supabase")) {
+        await deleteImage(previewUrl);
+      }
+
+      // Show preview immediately
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+
+      // Upload to Supabase
+      const url = await uploadImage(file);
+
+      if (url) {
+        onUpload(url);
+        // Clean up object URL after successful upload
+        URL.revokeObjectURL(objectUrl);
+        setPreviewUrl(url);
+      } else {
+        // Revert preview on error
+        setPreviewUrl(thumbnailUrl);
+        URL.revokeObjectURL(objectUrl);
+      }
+    },
+    [uploadImage, onUpload, thumbnailUrl]
+  );
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    },
+    [handleFileSelect]
+  );
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    },
+    [handleFileSelect]
+  );
+
+  const handleRemove = useCallback(async () => {
+    // Delete from Supabase if it's a Supabase URL
+    if (previewUrl && previewUrl.includes("supabase")) {
+      const deleted = await deleteImage(previewUrl);
+      if (!deleted) {
+        // Optionally show error but still proceed with UI removal
+        console.error("Failed to delete image from storage");
+      }
+    }
+
+    setPreviewUrl(null);
+    resetUpload();
+    onRemove();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, [previewUrl, deleteImage, onRemove, resetUpload]);
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <div className="space-y-3">
+      <Label>Village Thumbnail</Label>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleInputChange}
+        className="hidden"
+      />
+
+      {/* Upload area or preview */}
+      {previewUrl ? (
+        <div className="relative group">
+          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-border">
+            <Image
+              src={previewUrl}
+              alt="Village thumbnail preview"
+              fill
+              className="object-cover"
+            />
+            {(isUploading || isDeleting) && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p className="text-sm">
+                    {isDeleting ? "Removing..." : `Uploading... ${progress}%`}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Overlay with actions */}
+          {!isUploading && !isDeleting && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleClick}
+                disabled={isDeleting}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Replace
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleRemove}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                {isDeleting ? "Removing..." : "Remove"}
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          onClick={handleClick}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`
+            relative cursor-pointer rounded-lg border-2 border-dashed p-8
+            transition-colors duration-200
+            ${
+              dragActive
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
+            }
+            ${isUploading ? "pointer-events-none" : ""}
+          `}
+        >
+          {isUploading ? (
+            <div className="text-center">
+              <Loader2 className="h-10 w-10 mx-auto mb-3 text-primary animate-spin" />
+              <p className="text-sm font-medium mb-2">Uploading image...</p>
+              <Progress value={progress} className="w-full max-w-xs mx-auto" />
+              <p className="text-xs text-muted-foreground mt-2">{progress}%</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium mb-1">
+                Drop an image here or click to upload
+              </p>
+              <p className="text-xs text-muted-foreground">
+                JPG, PNG, or WebP (max 5MB)
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Progress bar during upload */}
+      {isUploading && !previewUrl && (
+        <Progress value={progress} className="w-full" />
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-destructive">
+          <X className="h-4 w-4" />
+          {error}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CreateVillagePage = () => {
   const router = useRouter();
   const [createVillage, { isLoading }] = useCreateVillageMutation();
   const [activeTab, setActiveTab] = useState("basic");
+
+  // Define tab order for navigation
+  const tabs = [
+    "basic",
+    "infrastructure",
+    "internet",
+    "transport",
+    "community",
+    "leisure",
+    "links",
+  ] as const;
+
+  const currentTabIndex = tabs.indexOf(activeTab as typeof tabs[number]);
+  const isFirstTab = currentTabIndex === 0;
+  const isLastTab = currentTabIndex === tabs.length - 1;
+
+  const goToNextTab = () => {
+    if (!isLastTab) {
+      setActiveTab(tabs[currentTabIndex + 1]);
+    }
+  };
+
+  const goToPreviousTab = () => {
+    if (!isFirstTab) {
+      setActiveTab(tabs[currentTabIndex - 1]);
+    }
+  };
 
   const [formData, setFormData] = useState<VillageFormData>({
     name: "",
@@ -137,6 +409,7 @@ const CreateVillagePage = () => {
     description: "",
     latitude: 0,
     longitude: 0,
+    thumbnailUrl: null,
     infrastructure: {
       hasGroceryStore: false,
       hasSupermarket: false,
@@ -213,6 +486,14 @@ const CreateVillagePage = () => {
         return newErrors;
       });
     }
+  };
+
+  const handleThumbnailUpload = (url: string) => {
+    setFormData((prev) => ({ ...prev, thumbnailUrl: url }));
+  };
+
+  const handleThumbnailRemove = () => {
+    setFormData((prev) => ({ ...prev, thumbnailUrl: null }));
   };
 
   const handleInfrastructureChange = (
@@ -337,6 +618,8 @@ const CreateVillagePage = () => {
     }
 
     try {
+        console.log("Submitting village data:", formData);
+        
       await createVillage(formData).unwrap();
       router.push("/villages");
     } catch (error) {
@@ -354,9 +637,7 @@ const CreateVillagePage = () => {
         formData.latitude &&
         formData.longitude
       ),
-      infrastructure: !!(
-        formData.infrastructure.restaurantsCount >= 0
-      ),
+      infrastructure: !!(formData.infrastructure.restaurantsCount >= 0),
       internet: !!(
         formData.internet.typicalSpeed > 0 &&
         formData.internet.internetTypes.length > 0
@@ -427,7 +708,10 @@ const CreateVillagePage = () => {
                       <CheckCircle className="h-3 w-3 text-green-500" />
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="infrastructure" className="flex items-center gap-1">
+                  <TabsTrigger
+                    value="infrastructure"
+                    className="flex items-center gap-1"
+                  >
                     <Building className="h-3 w-3" />
                     <p className="hidden md:flex">Infrastructure</p>
                     {completionStatus.infrastructure && (
@@ -471,7 +755,7 @@ const CreateVillagePage = () => {
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Basic Information Tab */}
+                {/* Basic Info Tab */}
                 <TabsContent value="basic" className="space-y-4">
                   <Card>
                     <CardHeader>
@@ -481,6 +765,15 @@ const CreateVillagePage = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Thumbnail Upload Section */}
+                      <ThumbnailUpload
+                        thumbnailUrl={formData.thumbnailUrl}
+                        onUpload={handleThumbnailUpload}
+                        onRemove={handleThumbnailRemove}
+                      />
+
+                      <Separator className="my-4" />
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="name">
@@ -543,7 +836,9 @@ const CreateVillagePage = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Coordinates <span className="text-red-500">*</span></Label>
+                          <Label>
+                            Coordinates <span className="text-red-500">*</span>
+                          </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <Input
                               type="number"
@@ -604,7 +899,7 @@ const CreateVillagePage = () => {
                   </Card>
                 </TabsContent>
 
-                {/* Infrastructure Tab */}
+                {/* Infrastructure Tab - Keep existing content */}
                 <TabsContent value="infrastructure" className="space-y-4">
                   <Card>
                     <CardHeader>
@@ -725,8 +1020,6 @@ const CreateVillagePage = () => {
                         </div>
                       </div>
 
-                      <Separator />
-
                       {/* Healthcare */}
                       <div>
                         <h3 className="font-semibold mb-3">Healthcare</h3>
@@ -755,10 +1048,9 @@ const CreateVillagePage = () => {
                                       e.target.value
                                     )
                                   }
-                                  placeholder="e.g., Mon-Fri 8-12, 14-18"
+                                  placeholder="e.g., Mon-Fri 9-17"
                                 />
                               </div>
-
                               <div className="flex items-center space-x-2">
                                 <Checkbox
                                   id="doctorGerman"
@@ -849,7 +1141,7 @@ const CreateVillagePage = () => {
                             <Checkbox
                               id="hasDentist"
                               checked={formData.infrastructure.hasDentist}
-                              onCheckedChange={(checked:any) =>
+                              onCheckedChange={(checked) =>
                                 handleInfrastructureChange("hasDentist", checked)
                               }
                             />
@@ -875,8 +1167,6 @@ const CreateVillagePage = () => {
                           )}
                         </div>
                       </div>
-
-                      <Separator />
 
                       {/* Services */}
                       <div>
@@ -934,8 +1224,6 @@ const CreateVillagePage = () => {
                         </div>
                       </div>
 
-                      <Separator />
-
                       {/* Education */}
                       <div>
                         <h3 className="font-semibold mb-3">Education</h3>
@@ -951,17 +1239,15 @@ const CreateVillagePage = () => {
                                 )
                               }
                             />
-                            <Label htmlFor="hasKindergarten">
-                              Has Kindergarten
-                            </Label>
+                            <Label htmlFor="hasKindergarten">Has Kindergarten</Label>
                           </div>
 
                           {formData.infrastructure.hasKindergarten && (
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
                               <Label htmlFor="kindergartenInfo">
                                 Kindergarten Info
                               </Label>
-                              <Textarea
+                              <Input
                                 id="kindergartenInfo"
                                 value={formData.infrastructure.kindergartenInfo}
                                 onChange={(e) =>
@@ -970,7 +1256,7 @@ const CreateVillagePage = () => {
                                     e.target.value
                                   )
                                 }
-                                rows={2}
+                                placeholder="Additional information"
                               />
                             </div>
                           )}
@@ -992,11 +1278,11 @@ const CreateVillagePage = () => {
                           </div>
 
                           {formData.infrastructure.hasPrimarySchool && (
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
                               <Label htmlFor="primarySchoolInfo">
                                 Primary School Info
                               </Label>
-                              <Textarea
+                              <Input
                                 id="primarySchoolInfo"
                                 value={formData.infrastructure.primarySchoolInfo}
                                 onChange={(e) =>
@@ -1005,7 +1291,7 @@ const CreateVillagePage = () => {
                                     e.target.value
                                   )
                                 }
-                                rows={2}
+                                placeholder="Additional information"
                               />
                             </div>
                           )}
@@ -1027,11 +1313,11 @@ const CreateVillagePage = () => {
                           </div>
 
                           {formData.infrastructure.hasSecondarySchool && (
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
                               <Label htmlFor="secondarySchoolInfo">
                                 Secondary School Info
                               </Label>
-                              <Textarea
+                              <Input
                                 id="secondarySchoolInfo"
                                 value={formData.infrastructure.secondarySchoolInfo}
                                 onChange={(e) =>
@@ -1040,14 +1326,12 @@ const CreateVillagePage = () => {
                                     e.target.value
                                   )
                                 }
-                                rows={2}
+                                placeholder="Additional information"
                               />
                             </div>
                           )}
                         </div>
                       </div>
-
-                      <Separator />
 
                       {/* Restaurants */}
                       <div>
@@ -1071,9 +1355,7 @@ const CreateVillagePage = () => {
                           </div>
 
                           <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="restaurantInfo">
-                              Restaurant Information
-                            </Label>
+                            <Label htmlFor="restaurantInfo">Restaurant Info</Label>
                             <Textarea
                               id="restaurantInfo"
                               value={formData.infrastructure.restaurantInfo}
@@ -1083,7 +1365,7 @@ const CreateVillagePage = () => {
                                   e.target.value
                                 )
                               }
-                              placeholder="Details about restaurants..."
+                              placeholder="Describe available restaurants..."
                               rows={2}
                             />
                           </div>
@@ -1099,7 +1381,7 @@ const CreateVillagePage = () => {
                     <CardHeader>
                       <CardTitle>Internet & Connectivity</CardTitle>
                       <CardDescription>
-                        Internet availability and mobile coverage
+                        Internet options and mobile coverage
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1118,14 +1400,11 @@ const CreateVillagePage = () => {
                                 parseInt(e.target.value) || 0
                               )
                             }
-                            placeholder="e.g., 100"
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="mobileCoverage">
-                            Mobile Coverage
-                          </Label>
+                          <Label htmlFor="mobileCoverage">Mobile Coverage</Label>
                           <Select
                             value={formData.internet.mobileCoverage}
                             onValueChange={(value) =>
@@ -1136,36 +1415,34 @@ const CreateVillagePage = () => {
                               <SelectValue placeholder="Select coverage" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Excellent">Excellent</SelectItem>
-                              <SelectItem value="Good">Good</SelectItem>
-                              <SelectItem value="Fair">Fair</SelectItem>
-                              <SelectItem value="Poor">Poor</SelectItem>
-                              <SelectItem value="None">None</SelectItem>
+                              <SelectItem value="excellent">Excellent</SelectItem>
+                              <SelectItem value="good">Good</SelectItem>
+                              <SelectItem value="moderate">Moderate</SelectItem>
+                              <SelectItem value="poor">Poor</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label>Internet Types Available</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {["DSL", "Fiber", "Cable", "Mobile", "Satellite"].map(
-                            (type) => (
-                              <div
-                                key={type}
-                                className="flex items-center space-x-2"
-                              >
-                                <Checkbox
-                                  id={`internet-${type}`}
-                                  checked={formData.internet.internetTypes.includes(
-                                    type
-                                  )}
-                                  onCheckedChange={() => toggleInternetType(type)}
-                                />
-                                <Label htmlFor={`internet-${type}`}>{type}</Label>
-                              </div>
-                            )
-                          )}
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Internet Types Available</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {["DSL", "Fiber", "Cable", "Mobile", "Satellite"].map(
+                              (type) => (
+                                <Badge
+                                  key={type}
+                                  variant={
+                                    formData.internet.internetTypes.includes(type)
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="cursor-pointer"
+                                  onClick={() => toggleInternetType(type)}
+                                >
+                                  {type}
+                                </Badge>
+                              )
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -1178,7 +1455,7 @@ const CreateVillagePage = () => {
                     <CardHeader>
                       <CardTitle>Transportation</CardTitle>
                       <CardDescription>
-                        Public transport and road connections
+                        Public transport and road access
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1191,7 +1468,7 @@ const CreateVillagePage = () => {
                             onChange={(e) =>
                               handleTransportChange("busRoutes", e.target.value)
                             }
-                            placeholder="e.g., Route 12, 45"
+                            placeholder="e.g., Route 10, 15"
                           />
                         </div>
 
@@ -1203,7 +1480,7 @@ const CreateVillagePage = () => {
                             onChange={(e) =>
                               handleTransportChange("busFrequency", e.target.value)
                             }
-                            placeholder="e.g., Every 30 minutes"
+                            placeholder="e.g., Every 30 mins"
                           />
                         </div>
 
@@ -1221,7 +1498,7 @@ const CreateVillagePage = () => {
 
                         <div className="space-y-2">
                           <Label htmlFor="trainDistanceKm">
-                            Train Station Distance (km)
+                            Distance to Station (km)
                           </Label>
                           <Input
                             id="trainDistanceKm"
@@ -1239,7 +1516,7 @@ const CreateVillagePage = () => {
 
                         <div className="space-y-2">
                           <Label htmlFor="motorwayDistanceKm">
-                            Motorway Distance (km)
+                            Distance to Motorway (km)
                           </Label>
                           <Input
                             id="motorwayDistanceKm"
@@ -1263,16 +1540,16 @@ const CreateVillagePage = () => {
                 <TabsContent value="community" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Community & Culture</CardTitle>
+                      <CardTitle>Community</CardTitle>
                       <CardDescription>
-                        Social aspects and community life
+                        Local community information
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="germanCommunityCount">
-                            German-Speaking Community Size
+                            German Community Size
                           </Label>
                           <Input
                             id="germanCommunityCount"
@@ -1284,14 +1561,11 @@ const CreateVillagePage = () => {
                                 parseInt(e.target.value) || 0
                               )
                             }
-                            placeholder="Estimated count"
                           />
                         </div>
 
                         <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="associations">
-                            Local Associations & Clubs
-                          </Label>
+                          <Label htmlFor="associations">Local Associations</Label>
                           <Textarea
                             id="associations"
                             value={formData.community.associations}
@@ -1508,17 +1782,54 @@ const CreateVillagePage = () => {
               </Tabs>
 
               {/* Bottom Action Buttons */}
-              <div className="flex items-center justify-between pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push("/villages")}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleSubmit} disabled={isLoading}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {isLoading ? "Creating..." : "Create Village"}
-                </Button>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/villages")}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Previous Button */}
+                  <Button
+                    variant="outline"
+                    onClick={goToPreviousTab}
+                    disabled={isFirstTab}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+
+                  {/* Next or Submit Button */}
+                  {isLastTab ? (
+                    <Button onClick={handleSubmit} disabled={isLoading}>
+                      <Save className="h-4 w-4 mr-2" />
+                      {isLoading ? "Creating..." : "Create Village"}
+                    </Button>
+                  ) : (
+                    <Button onClick={goToNextTab}>
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Tab Progress Indicator */}
+              <div className="flex items-center justify-center gap-1 pt-2">
+                {tabs.map((tab, index) => (
+                  <div
+                    key={tab}
+                    className={`h-2 w-8 rounded-full transition-colors ${
+                      index <= currentTabIndex
+                        ? "bg-primary"
+                        : "bg-muted"
+                    }`}
+                  />
+                ))}
               </div>
             </div>
           </SidebarInset>
