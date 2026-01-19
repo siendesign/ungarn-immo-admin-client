@@ -343,3 +343,70 @@ export interface VillageStatsResponse {
     createdAt: string;
   }>;
 }
+
+// ============================================
+// CMS CONTENT TYPES
+// ============================================
+
+export interface PageSection {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "richtext";
+}
+
+export interface PageConfig {
+  id: string;
+  pageKey: string;
+  pageName: string;
+  description?: string;
+  sections: PageSection[];
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageContent {
+  id: string;
+  pageKey: string;
+  sectionKey: string;
+  language: string;
+  content: string;
+  updatedBy?: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageConfigsResponse {
+  pages: PageConfig[];
+}
+
+export interface PageContentResponse {
+  pageKey: string;
+  content: Record<string, Record<string, string>>; // { en: { Hero_h1: "text" }, de: {...} }
+  rawContent: PageContent[];
+}
+
+export interface ContentStatsResponse {
+  overview: {
+    totalContent: number;
+    totalPages: number;
+    languages: string[];
+  };
+  contentByPage: Array<{
+    pageKey: string;
+    count: number;
+  }>;
+  contentByLanguage: Array<{
+    language: string;
+    count: number;
+  }>;
+  recentUpdates: Array<{
+    pageKey: string;
+    sectionKey: string;
+    language: string;
+    updatedAt: string;
+    updatedBy?: string;
+  }>;
+}

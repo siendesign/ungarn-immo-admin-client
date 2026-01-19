@@ -2,25 +2,11 @@
 
 import * as React from "react";
 import {
-  BarChart3,
-  BookOpen,
-  Bot,
   Building2,
-  Command,
   FileText,
-  Frame,
   Home,
-  House,
-  LayoutDashboard,
-  LifeBuoy,
-  Map,
   MapPinned,
-  PieChart,
-  Send,
   Settings,
-  Settings2,
-  SquareTerminal,
-  UserRound,
   Users,
 } from "lucide-react";
 
@@ -43,8 +29,9 @@ import { useGetAuthUserQuery } from "@/state/api";
 const navItems = [
   { title: "Dashboard", icon: Home, url: "/dashboard" },
   { title: "Properties", icon: Building2, url: "/properties", isActive: true },
-  { title: "users", icon: Users, url: "/users" },
+  { title: "Users", icon: Users, url: "/users" },
   { title: "Villages", icon: MapPinned, url: "/villages" },
+  { title: "Content", icon: FileText, url: "/content" },
   { title: "Settings", icon: Settings, url: "/settings" },
 ];
 

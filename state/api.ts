@@ -9,6 +9,10 @@ import {
   Village,
   VillagesResponse,
   VillageStatsResponse,
+  PageConfig,
+  PageConfigsResponse,
+  PageContentResponse,
+  ContentStatsResponse,
 } from "@/types/index.t";
 import { GetSellerPropertiesResponse } from "@/types/seller.t";
 import { createClient } from "@/utils/supabase/client";
@@ -86,7 +90,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["Properties", "Users", "Sellers", "Buyers", "Villages"],
+  tagTypes: ["Properties", "Users", "Sellers", "Buyers", "Villages", "Content"],
   endpoints: (build) => ({
     getAuthUser: build.query<any, void>({
       queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
@@ -485,6 +489,105 @@ export const api = createApi({
       query: () => "admin/villages/counties",
       providesTags: [{ type: "Villages", id: "COUNTIES" }],
     }),
+
+    // ============================================
+    // CMS CONTENT ENDPOINTS
+    // ============================================
+
+    // Get all page configs
+    getPageConfigs: build.query<PageConfigsResponse, void>({
+      query: () => "admin/content/pages",
+      providesTags: [{ type: "Content", id: "PAGES" }],
+    }),
+
+    // Get page config by key
+    getPageConfigByKey: build.query<PageConfig, string>({
+      query: (pageKey) => `admin/content/pages/${pageKey}/config`,
+      providesTags: (_result, _error, pageKey) => [{ type: "Content", id: pageKey }],
+    }),
+
+    // Get page content
+    getPageContent: build.query<PageContentResponse, { pageKey: string; language?: string }>({
+      query: ({ pageKey, language }) => ({
+        url: `admin/content/pages/${pageKey}`,
+        params: language ? { language } : undefined,
+      }),
+      providesTags: (_result, _error, { pageKey }) => [
+        { type: "Content", id: `CONTENT_${pageKey}` },
+      ],
+    }),
+
+    // Update single content item
+    updatePageContent: build.mutation<
+      any,
+      { pageKey: string; sectionKey: string; language: string; content: string }
+    >({
+      query: ({ pageKey, ...body }) => ({
+        url: `admin/content/pages/${pageKey}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { pageKey }) => [
+        { type: "Content", id: `CONTENT_${pageKey}` },
+        { type: "Content", id: "STATS" },
+      ],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "Content updated successfully!",
+          error: "Failed to update content.",
+        });
+      },
+    }),
+
+    // Bulk update content
+    bulkUpdatePageContent: build.mutation<
+      any,
+      { pageKey: string; contents: Array<{ sectionKey: string; language: string; content: string }> }
+    >({
+      query: ({ pageKey, contents }) => ({
+        url: `admin/content/pages/${pageKey}/bulk`,
+        method: "PUT",
+        body: { contents },
+      }),
+      invalidatesTags: (_result, _error, { pageKey }) => [
+        { type: "Content", id: `CONTENT_${pageKey}` },
+        { type: "Content", id: "STATS" },
+      ],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "All content saved successfully!",
+          error: "Failed to save content.",
+        });
+      },
+    }),
+
+    // Import content from JSON
+    importContentFromJson: build.mutation<
+      any,
+      { pageKey: string; language: string; content: Record<string, string> }
+    >({
+      query: (body) => ({
+        url: "admin/content/import",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [
+        { type: "Content", id: "PAGES" },
+        { type: "Content", id: "STATS" },
+      ],
+      async onQueryStarted(_, { queryFulfilled }) {
+        await withToast(queryFulfilled, {
+          success: "Content imported successfully!",
+          error: "Failed to import content.",
+        });
+      },
+    }),
+
+    // Get content stats
+    getContentStats: build.query<ContentStatsResponse, void>({
+      query: () => "admin/content/stats",
+      providesTags: [{ type: "Content", id: "STATS" }],
+    }),
   }),
 });
 
@@ -511,5 +614,12 @@ export const {
   useDeleteVillageMutation,
   useGetVillageStatsQuery,
   useGetCountiesQuery,
-
+  // CMS Content hooks
+  useGetPageConfigsQuery,
+  useGetPageConfigByKeyQuery,
+  useGetPageContentQuery,
+  useUpdatePageContentMutation,
+  useBulkUpdatePageContentMutation,
+  useImportContentFromJsonMutation,
+  useGetContentStatsQuery,
 } = api;
