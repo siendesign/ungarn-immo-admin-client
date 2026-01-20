@@ -91,15 +91,15 @@ const AdminPage = () => {
   // Fetch properties using your existing API
   const { data: propertiesData, isLoading, error, refetch } = useGetPropertiesQuery({});
   // Handle wrapped response - API returns { properties: [...] } or direct array
-  const properties = Array.isArray(propertiesData)
+  const properties: Property[] = Array.isArray(propertiesData)
     ? propertiesData
     : (propertiesData as any)?.properties ?? (propertiesData as any)?.data ?? [];
   console.log("properties data:", propertiesData);
   
 
   // Filter properties based on search and filters
-  const filteredProperties = useMemo(() => {
-    return properties.filter((property) => {
+  const filteredProperties: Property[] = useMemo(() => {
+    return properties.filter((property: Property) => {
       const matchesSearch =
         searchTerm === "" ||
         property.basic?.address
@@ -129,11 +129,11 @@ const AdminPage = () => {
   const stats = useMemo(() => {
     return {
       total: properties.length,
-      active: properties.filter((p) => p.status === "PUBLISHED" as any).length,
-      pending: properties.filter((p) => p.status === "IN_REVIEW" as any).length,
-      sold: properties.filter((p) => p.status === "SOLD" as any).length,
+      active: properties.filter((p: Property) => p.status === "PUBLISHED" as any).length,
+      pending: properties.filter((p: Property) => p.status === "IN_REVIEW" as any).length,
+      sold: properties.filter((p: Property) => p.status === "SOLD" as any).length,
       averagePrice:
-        properties.reduce((sum, p) => sum + (p.basic?.price || 0), 0) /
+        properties.reduce((sum: number, p: Property) => sum + (p.basic?.price || 0), 0) /
           properties.length || 0,
     };
   }, [properties]);
