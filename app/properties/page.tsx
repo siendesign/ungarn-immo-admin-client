@@ -89,8 +89,12 @@ const AdminPage = () => {
   const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
 
   // Fetch properties using your existing API
-  const { data: properties = [], isLoading, error, refetch } = useGetPropertiesQuery({});
-console.log("properties data:", properties);
+  const { data: propertiesData, isLoading, error, refetch } = useGetPropertiesQuery({});
+  // Handle wrapped response - API returns { properties: [...] } or direct array
+  const properties = Array.isArray(propertiesData)
+    ? propertiesData
+    : (propertiesData as any)?.properties ?? (propertiesData as any)?.data ?? [];
+  console.log("properties data:", propertiesData);
   
 
   // Filter properties based on search and filters

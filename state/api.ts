@@ -231,7 +231,7 @@ export const api = createApi({
         return { url: "properties", params };
       },
       providesTags: (result) =>
-        result
+        result && Array.isArray(result)
           ? [...result.map(({ id }) => ({ type: "Properties" as const, id }))]
           : [{ type: "Properties", id: "LIST" }],
       async onQueryStarted(_, { queryFulfilled }) {
